@@ -15,6 +15,11 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- A-Frame for VR -->
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <!-- jsPDF and autoTable for PDF export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <!-- SheetJS for Excel export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
             --primary: #0B4D8D;
@@ -454,7 +459,10 @@
         <h3 id="learnersListTitle">Learners Report</h3>
         <p id="learnersListSchool"></p>
         <div style="margin:20px 0;">
-            <button class="btn-primary no-print" onclick="window.print()">Print / PDF</button>
+            <button class="btn-primary no-print" onclick="window.print()">Print</button>
+            <button class="btn-primary no-print" onclick="exportToPDF()">Download PDF</button>
+            <button class="btn-primary no-print" onclick="exportToExcel()">Download Excel</button>
+            <button class="btn-primary no-print" onclick="exportCurrentList()">Export CSV</button>
             <button class="btn-danger no-print" onclick="closeModal('learnersListModal')">Close</button>
         </div>
         <table>
@@ -586,6 +594,8 @@ let currentYear = '2025-2026';
 let currentTerm = 1;
 let learners = [], staff = [], payments = [], classes = [], feesStructure = defaultFees;
 let currentChart = null;
+let currentListFilter = 'all';
+let currentListClass = '';
 // ======================== AUTH & INITIALIZATION ========================
 function login() {
     const username = document.getElementById('username').value.trim().toLowerCase();
@@ -930,8 +940,11 @@ function renderClasses() {
                     <div style="font-size:14px;color:#666;margin-top:5px;">learner${plural}</div>
                 </td>
                 <td class="class-actions">
+                    <button class="btn-sm btn-success" onclick="showLearnersListModal('all', '${c}')"><i class="fas fa-users"></i> All</button>
+                    <button class="btn-sm btn-success" onclick="showLearnersListModal('paid', '${c}')"><i class="fas fa-check"></i> Paid</button>
+                    <button class="btn-sm btn-warning" onclick="showLearnersListModal('partial', '${c}')"><i class="fas fa-exclamation"></i> Partial</button>
+                    <button class="btn-sm btn-danger" onclick="showLearnersListModal('pending', '${c}')"><i class="fas fa-times"></i> Pending</button>
                     <button class="btn-sm btn-primary" onclick="editClassName('${c}')"><i class="fas fa-edit"></i> Rename</button>
-                    <button class="btn-sm btn-success" onclick="showLearnersListModal('all', '${c}')"><i class="fas fa-users"></i> View</button>
                     <button class="btn-sm btn-danger" onclick="deleteClass('${c}')"><i class="fas fa-trash"></i> Delete</button>
                 </td>
             </tr>`;
@@ -968,9 +981,12 @@ function showPaymentHistory(regNo, name) {
     document.getElementById('paymentHistoryModal').classList.remove('hidden');
 }
 function showLearnersListModal(filter = 'all', specificClass = '') {
+    currentListFilter = filter;
+    currentListClass = specificClass;
     const school = getCurrentSchool();
     let title = filter.charAt(0).toUpperCase() + filter.slice(1) + ' Learners';
-    if (specificClass) title = `Learners in ${specificClass}`;
+    if (specificClass) title += ` in ${specificClass}`;
+    if (filter === 'all' && specificClass) title = `Learners in ${specificClass}`;
     document.getElementById('learnersListTitle').textContent = `${title} - Term ${currentTerm}`;
     document.getElementById('learnersListSchool').textContent = school ? school.name : '';
     const tbody = document.getElementById('learnersListTable');
@@ -978,8 +994,9 @@ function showLearnersListModal(filter = 'all', specificClass = '') {
     let list = learners;
     if (specificClass) {
         list = learners.filter(l => l.class === specificClass);
-    } else if (filter !== 'all') {
-        list = learners.filter(l => {
+    }
+    if (filter !== 'all') {
+        list = list.filter(l => {
             const due = getFeesDue(l.class);
             const paid = getLearnerPayments(l.regNo).reduce((s, p) => s + p.amount, 0);
             if (filter === 'paid') return paid >= due;
@@ -988,12 +1005,15 @@ function showLearnersListModal(filter = 'all', specificClass = '') {
             return true;
         });
     }
-    document.getElementById('totalLearnersCount').textContent = list.length;
+    let totalDue = 0, totalPaid = 0, totalBalance = 0;
     list.forEach((l, i) => {
         const due = getFeesDue(l.class);
         const paid = getLearnerPayments(l.regNo).reduce((s, p) => s + p.amount, 0);
         const balance = due - paid;
         const status = paid >= due ? 'PAID' : paid > 0 ? 'PARTIAL' : 'PENDING';
+        totalDue += due;
+        totalPaid += paid;
+        totalBalance += balance;
         tbody.innerHTML += `<tr>
             <td>${i + 1}</td>
             <td>${l.regNo}</td>
@@ -1008,6 +1028,8 @@ function showLearnersListModal(filter = 'all', specificClass = '') {
             <td>${status}</td>
         </tr>`;
     });
+    tbody.innerHTML += `<tr style="font-weight:bold;"><td colspan="7">Totals</td><td>RWF ${totalDue.toLocaleString()}</td><td>RWF ${totalPaid.toLocaleString()}</td><td>RWF ${totalBalance.toLocaleString()}</td><td></td></tr>`;
+    document.getElementById('totalLearnersCount').textContent = list.length;
     document.getElementById('learnersListModal').classList.remove('hidden');
 }
 function renderAll() {
@@ -1173,6 +1195,87 @@ function exportLearners() {
     a.href = url;
     a.download = 'learners_export.csv';
     a.click();
+}
+function exportCurrentList() {
+    let list = learners;
+    if (currentListClass) {
+        list = list.filter(l => l.class === currentListClass);
+    }
+    if (currentListFilter !== 'all') {
+        list = list.filter(l => {
+            const due = getFeesDue(l.class);
+            const paid = getLearnerPayments(l.regNo).reduce((s, p) => s + p.amount, 0);
+            if (currentListFilter === 'paid') return paid >= due;
+            if (currentListFilter === 'partial') return paid > 0 && paid < due;
+            if (currentListFilter === 'pending') return paid === 0;
+            return true;
+        });
+    }
+    let csv = 'No,SDMS Code,Name,Father Name,Mother Name,Class,Gender,Due,Paid,Balance,Status\n';
+    let totalDue = 0, totalPaid = 0, totalBalance = 0;
+    list.forEach((l, i) => {
+        const due = getFeesDue(l.class);
+        const paid = getLearnerPayments(l.regNo).reduce((s, p) => s + p.amount, 0);
+        const balance = due - paid;
+        const status = paid >= due ? 'PAID' : paid > 0 ? 'PARTIAL' : 'PENDING';
+        totalDue += due;
+        totalPaid += paid;
+        totalBalance += balance;
+        csv += `${i+1},${l.regNo},${l.name},${l.fatherName || ''},${l.motherName || ''},${l.class},${l.gender === 'M' ? 'Male' : 'Female'},${due},${paid},${balance},${status}\n`;
+    });
+    csv += `,,,,,,Totals,${totalDue},${totalPaid},${totalBalance},\n`;
+    const blob = new Blob([csv], {type: 'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    let filename = `${currentListFilter}_learners`;
+    if (currentListClass) filename += `_${currentListClass.replace(/\s+/g, '_')}`;
+    filename += '.csv';
+    a.download = filename;
+    a.click();
+}
+function exportToPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const school = getCurrentSchool();
+    const title = document.getElementById('learnersListTitle').textContent;
+    doc.text(`${school.name} - ${title}`, 14, 20);
+    const table = document.getElementById('learnersListTable');
+    const rows = [];
+    const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent);
+    rows.push(headers);
+    table.querySelectorAll('tbody tr').forEach(tr => {
+        const row = Array.from(tr.querySelectorAll('td')).map(td => td.textContent);
+        rows.push(row);
+    });
+    doc.autoTable({
+        head: [rows[0]],
+        body: rows.slice(1),
+        startY: 30
+    });
+    let filename = `financial_report_${currentListFilter}`;
+    if (currentListClass) filename += `_${currentListClass.replace(/\s+/g, '_')}`;
+    filename += '.pdf';
+    doc.save(filename);
+}
+function exportToExcel() {
+    const wb = XLSX.utils.book_new();
+    const ws_data = [];
+    const school = getCurrentSchool();
+    const title = document.getElementById('learnersListTitle').textContent;
+    ws_data.push([`${school.name} - ${title}`]);
+    ws_data.push([]);
+    const table = document.getElementById('learnersListTable');
+    table.querySelectorAll('tr').forEach(tr => {
+        const row = Array.from(tr.querySelectorAll('th, td')).map(cell => cell.textContent);
+        ws_data.push(row);
+    });
+    const ws = XLSX.utils.aoa_to_sheet(ws_data);
+    XLSX.utils.book_append_sheet(wb, ws, "Report");
+    let filename = `financial_report_${currentListFilter}`;
+    if (currentListClass) filename += `_${currentListClass.replace(/\s+/g, '_')}`;
+    filename += '.xlsx';
+    XLSX.writeFile(wb, filename);
 }
 function downloadLearnerTemplate() {
     const csv = 'SDMS Code,Name,Father Name,Mother Name,Gender,Class\nRW001,Example Name,Father Name,Mother Name,M,P1\n';

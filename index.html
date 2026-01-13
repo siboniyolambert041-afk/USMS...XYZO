@@ -279,6 +279,46 @@
             .no-print { display: none !important; }
             header, #navMenu, .loading, #loginScreen { display: none; }
         }
+        .fee-item-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        .fee-item-row input {
+            margin: 0;
+        }
+        .fee-name {
+            flex: 2;
+        }
+        .fee-amount {
+            flex: 1;
+        }
+        .fee-details {
+            font-size: 14px;
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+            gap: 10px;
+        }
+        .pagination button {
+            padding: 8px 12px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .pagination button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .pagination span {
+            font-size: 16px;
+        }
     </style>
 </head>
 <body>
@@ -358,10 +398,13 @@
                 <button class="btn-primary" onclick="exportLearners()">Export All</button>
                 <button class="btn-primary" onclick="downloadLearnerTemplate()">Template</button>
                 <button class="btn-primary" onclick="document.getElementById('importLearnersFile').click()">Import CSV</button>
+                <button class="btn-primary" onclick="downloadPaymentsTemplate()">Payments Template</button>
+                <button class="btn-primary" onclick="document.getElementById('importPaymentsFile').click()">Import Payments CSV</button>
                 <select id="classFilter" onchange="renderLearners()"><option value="">All Classes</option></select>
-                <input type="text" id="learnerSearch" onkeyup="renderLearners()" placeholder="Search by Code or Name..." style="flex:1;">
+                <input type="text" id="learnerSearch" placeholder="Search by Code or Name..." style="flex:1;">
             </div>
             <input type="file" id="importLearnersFile" style="display:none" accept=".csv" onchange="importLearners(event)">
+            <input type="file" id="importPaymentsFile" style="display:none" accept=".csv" onchange="importPayments(event)">
             <div style="overflow-x:auto;">
                 <table>
                     <thead>
@@ -383,6 +426,7 @@
                     <tbody id="learnerList"></tbody>
                 </table>
             </div>
+            <div id="learnerPagination" class="pagination"></div>
         </div>
         <div id="staff" class="tab card">
             <h2>Staff Management</h2>
@@ -421,11 +465,10 @@
             <h2>Fees Structure - Term <span id="feesTermDisplay">1</span></h2>
             <button class="btn-success" onclick="showFeesModal()">Edit Fees</button>
             <div class="fees-grid">
-                <div class="fees-group"><h4>Nursery</h4><p>RWF <strong id="nurseryTotal">35,000</strong></p></div>
-                <div class="fees-group"><h4>P1-P3</h4><p>RWF <strong id="lowerTotal">45,000</strong></p></div>
-                <div class="fees-group"><h4>P4-P6</h4><p>RWF <strong id="upperTotal">55,000</strong></p></div>
-                <div class="fees-group"><h4>S1-S3</h4><p>RWF <strong id="ordinaryTotal">80,000</strong></p></div>
-                <div class="fees-group"><h4>S4-S6</h4><p>RWF <strong id="advancedTotal">100,000</strong></p></div>
+                <div class="fees-group"><h4>Nursery (N1-N3)</h4><p>RWF <strong id="nurseryTotal">35,000</strong></p><div class="fee-details" id="nurseryItems"></div></div>
+                <div class="fees-group"><h4>Lower Primary (P1-P2)</h4><p>RWF <strong id="lowerTotal">45,000</strong></p><div class="fee-details" id="lowerItems"></div></div>
+                <div class="fees-group"><h4>Upper Primary (P3-P6)</h4><p>RWF <strong id="upperTotal">55,000</strong></p><div class="fee-details" id="upperItems"></div></div>
+                <div class="fees-group"><h4>Secondary (S1-S6)</h4><p>RWF <strong id="secondaryTotal">90,000</strong></p><div class="fee-details" id="secondaryItems"></div></div>
             </div>
         </div>
         <div id="financeTab" class="tab card">
@@ -566,16 +609,29 @@
     <div class="modal-content">
         <h3>Edit Fees Structure - Term <span id="feesModalTerm">1</span></h3>
         <div class="fees-grid">
-            <div class="fees-group"><h4>Nursery</h4><label>School Fees</label><input type="number" id="nursery_school" value="35000"></div>
-            <div class="fees-group"><h4>P1-P3</h4><label>School Fees</label><input type="number" id="lower_school" value="45000"></div>
-            <div class="fees-group"><h4>P4-P6</h4><label>School Fees</label><input type="number" id="upper_school" value="55000"></div>
-            <div class="fees-group"><h4>S1-S3</h4><label>School Fees</label><input type="number" id="ordinary_school" value="80000"></div>
-            <div class="fees-group"><h4>S4-S6</h4><label>School Fees</label><input type="number" id="advanced_school" value="100000"></div>
+            <div class="fees-group" data-group="nursery"><h4>Nursery (N1-N3)</h4><div class="fee-items"></div><button class="btn-sm btn-success add-fee-item">Add Fee Item</button></div>
+            <div class="fees-group" data-group="lower"><h4>Lower Primary (P1-P2)</h4><div class="fee-items"></div><button class="btn-sm btn-success add-fee-item">Add Fee Item</button></div>
+            <div class="fees-group" data-group="upper"><h4>Upper Primary (P3-P6)</h4><div class="fee-items"></div><button class="btn-sm btn-success add-fee-item">Add Fee Item</button></div>
+            <div class="fees-group" data-group="secondary"><h4>Secondary (S1-S6)</h4><div class="fee-items"></div><button class="btn-sm btn-success add-fee-item">Add Fee Item</button></div>
         </div>
         <div style="text-align:right;">
             <button class="btn-success" onclick="saveFeesStructure()">Save</button>
             <button class="btn-danger" onclick="closeModal('feesModal')">Cancel</button>
         </div>
+    </div>
+</div>
+<div id="paymentModal" class="modal hidden">
+    <div class="modal-content">
+        <h3>Record Payment for <span id="payName"></span> (<span id="payRegNo"></span>)</h3>
+        <form id="paymentForm">
+            <label>Amount (RWF)</label><input type="number" id="payAmount" required min="1">
+            <label>Reason</label><select id="payReason" required></select>
+            <label>Date</label><input type="date" id="payDate" required>
+            <div style="text-align:right; margin-top:20px;">
+                <button type="submit" class="btn-success">Record</button>
+                <button type="button" class="btn-danger" onclick="closeModal('paymentModal')">Cancel</button>
+            </div>
+        </form>
     </div>
 </div>
 <script>
@@ -586,16 +642,38 @@ let schools = JSON.parse(localStorage.getItem('usms_schools') || JSON.stringify(
     { id: "demo2025", name: "GS Demo Rwanda 2025", sdmsCode: "GSDEM025", province: "Kigali", district: "Gasabo", sector: "Remera", headTeacherRegNo: "" }
 ]));
 const defaultFees = {
-    1: { nursery: {school:35000}, lower: {school:45000}, upper: {school:55000}, ordinary: {school:80000}, advanced: {school:100000} },
-    2: { nursery: {school:35000}, lower: {school:45000}, upper: {school:55000}, ordinary: {school:80000}, advanced: {school:100000} },
-    3: { nursery: {school:35000}, lower: {school:45000}, upper: {school:55000}, ordinary: {school:80000}, advanced: {school:100000} }
+    1: {
+        nursery: [{name: "School Fees", amount: 35000}],
+        lower: [{name: "School Fees", amount: 45000}],
+        upper: [{name: "School Fees", amount: 55000}],
+        secondary: [{name: "School Fees", amount: 90000}]
+    },
+    2: {
+        nursery: [{name: "School Fees", amount: 35000}],
+        lower: [{name: "School Fees", amount: 45000}],
+        upper: [{name: "School Fees", amount: 55000}],
+        secondary: [{name: "School Fees", amount: 90000}]
+    },
+    3: {
+        nursery: [{name: "School Fees", amount: 35000}],
+        lower: [{name: "School Fees", amount: 45000}],
+        upper: [{name: "School Fees", amount: 55000}],
+        secondary: [{name: "School Fees", amount: 90000}]
+    }
 };
 let currentYear = '2025-2026';
 let currentTerm = 1;
 let learners = [], staff = [], payments = [], classes = [], feesStructure = defaultFees;
+let learnersMap = new Map();
+let staffMap = new Map();
 let currentChart = null;
 let currentListFilter = 'all';
 let currentListClass = '';
+let paymentsMap = new Map(); // regNo -> array of payments (for current term)
+let paidMap = new Map(); // regNo -> total paid (for current term)
+let learnerPage = 1;
+const pageSize = 50;
+let searchTimeout = null;
 // ======================== AUTH & INITIALIZATION ========================
 function login() {
     const username = document.getElementById('username').value.trim().toLowerCase();
@@ -664,9 +742,12 @@ function loadSchoolData() {
     learners = JSON.parse(localStorage.getItem(getKey('learners')) || '[]');
     staff = JSON.parse(localStorage.getItem(getKey('staff')) || '[]');
     payments = JSON.parse(localStorage.getItem(getKey('payments')) || '[]');
-    classes = JSON.parse(localStorage.getItem(getKey('classes')) || JSON.stringify(["Nursery","P1","P2","P3","P4","P5","P6","S1","S2","S3","S4","S5","S6"]));
+    classes = JSON.parse(localStorage.getItem(getKey('classes')) || JSON.stringify(["N1","N2","N3","P1","P2","P3","P4","P5","P6","S1","S2","S3","S4","S5","S6"]));
     feesStructure = JSON.parse(localStorage.getItem(getKey('fees')) || JSON.stringify(defaultFees));
     currentTerm = parseInt(localStorage.getItem(getKey('term')) || '1');
+    buildLearnersMap();
+    buildStaffMap();
+    buildPaymentsCache();
 }
 function saveSchoolData() {
     if (!currentSchoolId) return;
@@ -676,6 +757,14 @@ function saveSchoolData() {
     localStorage.setItem(getKey('classes'), JSON.stringify(classes));
     localStorage.setItem(getKey('fees'), JSON.stringify(feesStructure));
     localStorage.setItem(getKey('term'), currentTerm.toString());
+}
+function buildLearnersMap() {
+    learnersMap.clear();
+    learners.forEach(l => learnersMap.set(l.regNo, l));
+}
+function buildStaffMap() {
+    staffMap.clear();
+    staff.forEach(s => staffMap.set(s.regNo, s));
 }
 function populateSchoolSelector() {
     const select = document.getElementById('schoolSelector');
@@ -772,7 +861,7 @@ function populateHeadTeacherOptions(selectId) {
         select.appendChild(opt);
     });
 }
-// ======================== The rest of the script remains the same as in the original, including UI navigation, fees, payments, rendering, CRUD for learners, staff, classes, etc. ========================
+// ======================== UI NAVIGATION ========================
 function showTab(id) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('#navMenu button').forEach(b => b.classList.remove('active'));
@@ -803,37 +892,293 @@ function updateDisplays() {
 function closeModal(id) {
     document.getElementById(id).classList.add('hidden');
 }
-function getFeesDue(className) {
-    if (!className) return 0;
+// ======================== FEES MANAGEMENT ========================
+function getGroup(className) {
+    if (!className) return null;
     const lc = className.toLowerCase();
+    if (/n[1-3]/i.test(lc)) return 'nursery';
+    if (/p[1-2]/i.test(lc)) return 'lower';
+    if (/p[3-6]/i.test(lc)) return 'upper';
+    if (/s[1-6]/i.test(lc)) return 'secondary';
+    return null;
+}
+function getFeesDue(className) {
+    const group = getGroup(className);
+    if (!group) return 0;
+    const items = feesStructure[currentTerm][group] || [];
+    return items.reduce((sum, item) => sum + (item.amount || 0), 0);
+}
+function addFeeItemRow(container, name = '', amount = 0) {
+    const row = document.createElement('div');
+    row.className = 'fee-item-row';
+    row.innerHTML = `
+        <input type="text" class="fee-name" placeholder="Fee Name" value="${name}">
+        <input type="number" class="fee-amount" placeholder="Amount" value="${amount}">
+        <button class="btn-sm btn-danger remove-fee-item">Remove</button>
+    `;
+    row.querySelector('.remove-fee-item').onclick = function() {
+        row.remove();
+    };
+    container.appendChild(row);
+}
+function showFeesModal() {
+    document.getElementById('feesModalTerm').textContent = currentTerm;
+    const groups = ['nursery', 'lower', 'upper', 'secondary'];
+    groups.forEach(group => {
+        const container = document.querySelector(`.fees-group[data-group="${group}"] .fee-items`);
+        container.innerHTML = '';
+        const items = feesStructure[currentTerm][group] || [];
+        items.forEach(item => {
+            addFeeItemRow(container, item.name, item.amount);
+        });
+        if (items.length === 0) {
+            addFeeItemRow(container);
+        }
+    });
+    document.querySelectorAll('.add-fee-item').forEach(btn => {
+        btn.onclick = function() {
+            const container = this.previousElementSibling;
+            addFeeItemRow(container);
+        };
+    });
+    document.getElementById('feesModal').classList.remove('hidden');
+}
+function saveFeesStructure() {
+    const groups = ['nursery', 'lower', 'upper', 'secondary'];
+    groups.forEach(group => {
+        const container = document.querySelector(`.fees-group[data-group="${group}"] .fee-items`);
+        const items = [];
+        container.querySelectorAll('.fee-item-row').forEach(row => {
+            const name = row.querySelector('.fee-name').value.trim();
+            const amt = parseInt(row.querySelector('.fee-amount').value) || 0;
+            if (name && amt > 0) {
+                items.push({name, amount: amt});
+            }
+        });
+        feesStructure[currentTerm][group] = items;
+    });
+    saveSchoolData();
+    closeModal('feesModal');
+    renderFeesSummary();
+    renderAll();
+}
+function renderFeesSummary() {
     const f = feesStructure[currentTerm];
-    if (lc.includes('nursery')) return f.nursery.school || 35000;
-    if (/p[1-3]/i.test(lc)) return f.lower.school || 45000;
-    if (/p[4-6]/i.test(lc)) return f.upper.school || 55000;
-    if (/s[1-3]/i.test(lc)) return f.ordinary.school || 80000;
-    if (/s[4-6]/i.test(lc)) return f.advanced.school || 100000;
-    return 0;
+    const groups = ['nursery', 'lower', 'upper', 'secondary'];
+    groups.forEach(g => {
+        const items = f[g] || [];
+        const total = items.reduce((s, i) => s + i.amount, 0);
+        document.getElementById(g + 'Total').textContent = total.toLocaleString();
+        const details = document.getElementById(g + 'Items');
+        details.innerHTML = items.map(i => `<div>${i.name}: RWF ${i.amount.toLocaleString()}</div>`).join('');
+    });
+}
+// ======================== PAYMENTS & LEARNERS ========================
+function buildPaymentsCache() {
+    paymentsMap.clear();
+    paidMap.clear();
+    payments.filter(p => p.term === currentTerm).forEach(p => {
+        if (!paymentsMap.has(p.regNo)) {
+            paymentsMap.set(p.regNo, []);
+        }
+        paymentsMap.get(p.regNo).push(p);
+    });
+    paymentsMap.forEach((pays, regNo) => {
+        const totalPaid = pays.reduce((s, p) => s + p.amount, 0);
+        paidMap.set(regNo, totalPaid);
+    });
 }
 function getLearnerPayments(regNo) {
-    return payments.filter(p => p.regNo === regNo && p.term === currentTerm);
+    return paymentsMap.get(regNo) || [];
 }
-function recordPayment(regNo, name) {
-    const amountStr = prompt(`Record payment for ${name} (${regNo})\nAmount (RWF):`);
-    if (!amountStr || isNaN(amountStr) || parseFloat(amountStr) <= 0) return;
-    const amount = parseInt(amountStr);
-    const reason = prompt('Reason:', 'School Fees') || 'School Fees';
-    payments.push({ regNo, name, amount, reason, term: currentTerm, date: new Date().toISOString().split('T')[0] });
-    saveSchoolData();
-    renderAll();
-    alert(`RWF ${amount.toLocaleString()} recorded!`);
+function getLearnerPaid(regNo) {
+    return paidMap.get(regNo) || 0;
 }
+function showPaymentModal(regNo, name) {
+    document.getElementById('payName').textContent = name;
+    document.getElementById('payRegNo').textContent = regNo;
+    const learner = learnersMap.get(regNo);
+    if (!learner) return;
+    const group = getGroup(learner.class);
+    const items = feesStructure[currentTerm][group] || [];
+    const select = document.getElementById('payReason');
+    select.innerHTML = '';
+    if (items.length === 0) {
+        select.innerHTML = '<option value="School Fees">School Fees</option>';
+    } else {
+        items.forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item.name;
+            opt.textContent = item.name;
+            select.appendChild(opt);
+        });
+    }
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('payDate').value = today;
+    document.getElementById('paymentForm').dataset.regNo = regNo;
+    document.getElementById('payAmount').value = '';
+    document.getElementById('paymentModal').classList.remove('hidden');
+}
+function showPaymentHistory(regNo, name) {
+    document.getElementById('phName').textContent = name;
+    document.getElementById('phRegNo').textContent = regNo;
+    const tbody = document.getElementById('paymentHistoryTable');
+    const pays = getLearnerPayments(regNo);
+    let rows = [];
+    if (pays.length === 0) {
+        rows.push('<tr><td colspan="3" style="text-align:center;">No payments recorded</td></tr>');
+    } else {
+        pays.forEach(p => {
+            rows.push(`<tr><td>${p.date}</td><td>RWF ${p.amount.toLocaleString()}</td><td>${p.reason}</td></tr>`);
+        });
+    }
+    tbody.innerHTML = rows.join('');
+    document.getElementById('paymentHistoryModal').classList.remove('hidden');
+}
+function showLearnersListModal(filter = 'all', specificClass = '') {
+    currentListFilter = filter;
+    currentListClass = specificClass;
+    const school = getCurrentSchool();
+    let title = filter.charAt(0).toUpperCase() + filter.slice(1) + ' Learners';
+    if (specificClass) title += ` in ${specificClass}`;
+    if (filter === 'all' && specificClass) title = `Learners in ${specificClass}`;
+    document.getElementById('learnersListTitle').textContent = `${title} - Term ${currentTerm}`;
+    document.getElementById('learnersListSchool').textContent = school ? school.name : '';
+    const tbody = document.getElementById('learnersListTable');
+    let list = learners;
+    if (specificClass) {
+        list = list.filter(l => l.class === specificClass);
+    }
+    if (filter !== 'all') {
+        list = list.filter(l => {
+            const due = getFeesDue(l.class);
+            const paid = getLearnerPaid(l.regNo);
+            if (filter === 'paid') return paid >= due;
+            if (filter === 'partial') return paid > 0 && paid < due;
+            if (filter === 'pending') return paid === 0;
+            return true;
+        });
+    }
+    let totalDue = 0, totalPaid = 0, totalBalance = 0;
+    let rows = [];
+    list.forEach((l, i) => {
+        const due = getFeesDue(l.class);
+        const paid = getLearnerPaid(l.regNo);
+        const balance = due - paid;
+        const status = paid >= due ? 'PAID' : paid > 0 ? 'PARTIAL' : 'PENDING';
+        totalDue += due;
+        totalPaid += paid;
+        totalBalance += balance;
+        rows.push(`<tr>
+            <td>${i + 1}</td>
+            <td>${l.regNo}</td>
+            <td>${l.name}</td>
+            <td>${l.fatherName || '—'}</td>
+            <td>${l.motherName || '—'}</td>
+            <td>${l.class}</td>
+            <td>${l.gender === 'M' ? 'Male' : 'Female'}</td>
+            <td>RWF ${due.toLocaleString()}</td>
+            <td>RWF ${paid.toLocaleString()}</td>
+            <td>RWF ${balance.toLocaleString()}</td>
+            <td>${status}</td>
+        </tr>`);
+    });
+    rows.push(`<tr style="font-weight:bold;"><td colspan="7">Totals</td><td>RWF ${totalDue.toLocaleString()}</td><td>RWF ${totalPaid.toLocaleString()}</td><td>RWF ${totalBalance.toLocaleString()}</td><td></td></tr>`);
+    tbody.innerHTML = rows.join('');
+    document.getElementById('totalLearnersCount').textContent = list.length;
+    document.getElementById('learnersListModal').classList.remove('hidden');
+}
+function renderLearners(page = learnerPage) {
+    learnerPage = page;
+    const search = document.getElementById('learnerSearch').value.toLowerCase();
+    const classFilter = document.getElementById('classFilter').value;
+    const tbody = document.getElementById('learnerList');
+    let filtered = learners.filter(l =>
+        (l.regNo.toLowerCase().includes(search) || l.name.toLowerCase().includes(search)) &&
+        (!classFilter || l.class === classFilter)
+    );
+    filtered.sort((a, b) => a.regNo.localeCompare(b.regNo));
+    const total = filtered.length;
+    const totalPages = Math.ceil(total / pageSize);
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize;
+    const paginated = filtered.slice(start, end);
+    let rows = [];
+    if (total === 0) {
+        rows.push('<tr><td colspan="12" style="text-align:center;padding:60px;color:#999;">No learners found</td></tr>');
+    } else {
+        paginated.forEach(l => {
+            const due = getFeesDue(l.class);
+            const paid = getLearnerPaid(l.regNo);
+            const balance = due - paid;
+            const status = paid >= due ? 'PAID' : paid > 0 ? 'PARTIAL' : 'PENDING';
+            const statusClass = `status-${status.toLowerCase()}`;
+            const count = (paymentsMap.get(l.regNo) || []).length;
+            rows.push(`
+                <tr>
+                    <td><strong>${l.regNo}</strong></td>
+                    <td>${l.name}</td>
+                    <td>${l.fatherName || '—'}</td>
+                    <td>${l.motherName || '—'}</td>
+                    <td>${l.class || '—'}</td>
+                    <td>${l.gender === 'M' ? 'Male' : 'Female'}</td>
+                    <td>RWF ${due.toLocaleString()}</td>
+                    <td>RWF ${paid.toLocaleString()}</td>
+                    <td>RWF ${balance.toLocaleString()}</td>
+                    <td><span class="status-badge ${statusClass}">${status}</span></td>
+                    <td><span class="payment-details" onclick="showPaymentHistory('${l.regNo}', '${l.name.replace(/'/g, "\\'")}')">View (${count})</span></td>
+                    <td style="white-space:nowrap;">
+                        <button class="btn-sm btn-primary" onclick="editLearner('${l.regNo}')">Edit</button>
+                        <button class="btn-sm btn-pay" onclick="showPaymentModal('${l.regNo}', '${l.name.replace(/'/g, "\\'")}')">Pay</button>
+                        <button class="btn-sm btn-danger" onclick="deleteLearner('${l.regNo}')">Delete</button>
+                    </td>
+                </tr>`);
+        });
+    }
+    tbody.innerHTML = rows.join('');
+    renderPagination(totalPages, page);
+}
+function renderPagination(totalPages, currentPage) {
+    const pagination = document.getElementById('learnerPagination');
+    pagination.innerHTML = '';
+    const prevPrev = document.createElement('button');
+    prevPrev.textContent = '<<';
+    prevPrev.disabled = currentPage === 1;
+    prevPrev.onclick = () => renderLearners(1);
+    pagination.appendChild(prevPrev);
+    const prev = document.createElement('button');
+    prev.textContent = '<';
+    prev.disabled = currentPage === 1;
+    prev.onclick = () => renderLearners(currentPage - 1);
+    pagination.appendChild(prev);
+    const pageSpan = document.createElement('span');
+    pageSpan.textContent = `Page ${currentPage} of ${totalPages}`;
+    pagination.appendChild(pageSpan);
+    const next = document.createElement('button');
+    next.textContent = '>';
+    next.disabled = currentPage === totalPages;
+    next.onclick = () => renderLearners(currentPage + 1);
+    pagination.appendChild(next);
+    const nextNext = document.createElement('button');
+    nextNext.textContent = '>>';
+    nextNext.disabled = currentPage === totalPages;
+    nextNext.onclick = () => renderLearners(totalPages);
+    pagination.appendChild(nextNext);
+}
+// ======================== OTHER FUNCTIONS ========================
 function renderDashboard() {
-    const totalDue = learners.reduce((s, l) => s + getFeesDue(l.class), 0);
-    const totalPaid = payments.filter(p => p.term === currentTerm).reduce((s, p) => s + p.amount, 0);
+    let totalLearners = 0, boys = 0, girls = 0, totalDue = 0;
+    learners.forEach(l => {
+        totalLearners++;
+        if (l.gender === 'M') boys++;
+        else if (l.gender === 'F') girls++;
+        totalDue += getFeesDue(l.class);
+    });
+    const totalPaid = Array.from(paidMap.values()).reduce((s, p) => s + p, 0);
     const rate = totalDue > 0 ? Math.round((totalPaid / totalDue) * 100) : 0;
-    document.getElementById('dashTotalLearners').textContent = learners.length;
-    document.getElementById('dashBoys').textContent = learners.filter(l => l.gender === 'M').length;
-    document.getElementById('dashGirls').textContent = learners.filter(l => l.gender === 'F').length;
+    document.getElementById('dashTotalLearners').textContent = totalLearners;
+    document.getElementById('dashBoys').textContent = boys;
+    document.getElementById('dashGirls').textContent = girls;
     document.getElementById('dashTotalStaff').textContent = staff.length;
     document.getElementById('dashFeesCollected').textContent = 'RWF ' + totalPaid.toLocaleString();
     document.getElementById('dashFeesRate').textContent = rate + '%';
@@ -841,7 +1186,7 @@ function renderDashboard() {
 }
 function renderFinanceChart() {
     const totalDue = learners.reduce((s, l) => s + getFeesDue(l.class), 0);
-    const totalPaid = payments.filter(p => p.term === currentTerm).reduce((s, p) => s + p.amount, 0);
+    const totalPaid = Array.from(paidMap.values()).reduce((s, p) => s + p, 0);
     const outstanding = totalDue - totalPaid;
     document.getElementById('totalCollected').textContent = totalPaid.toLocaleString();
     document.getElementById('totalOutstanding').textContent = outstanding.toLocaleString();
@@ -855,101 +1200,57 @@ function renderFinanceChart() {
         options: { responsive: true }
     });
 }
-function renderFeesSummary() {
-    const f = feesStructure[currentTerm];
-    document.getElementById('nurseryTotal').textContent = (f.nursery.school || 35000).toLocaleString();
-    document.getElementById('lowerTotal').textContent = (f.lower.school || 45000).toLocaleString();
-    document.getElementById('upperTotal').textContent = (f.upper.school || 55000).toLocaleString();
-    document.getElementById('ordinaryTotal').textContent = (f.ordinary.school || 80000).toLocaleString();
-    document.getElementById('advancedTotal').textContent = (f.advanced.school || 100000).toLocaleString();
-}
-function renderLearners() {
-    const search = document.getElementById('learnerSearch').value.toLowerCase();
-    const classFilter = document.getElementById('classFilter').value;
-    const tbody = document.getElementById('learnerList');
-    tbody.innerHTML = '';
-    let filtered = learners.filter(l =>
-        (l.regNo.toLowerCase().includes(search) || l.name.toLowerCase().includes(search)) &&
-        (!classFilter || l.class === classFilter)
-    );
-    filtered.sort((a, b) => a.regNo.localeCompare(b.regNo));
-    if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;padding:60px;color:#999;">No learners found</td></tr>';
-        return;
-    }
-    filtered.forEach(l => {
-        const due = getFeesDue(l.class);
-        const paid = getLearnerPayments(l.regNo).reduce((s, p) => s + p.amount, 0);
-        const balance = due - paid;
-        const status = paid >= due ? 'PAID' : paid > 0 ? 'PARTIAL' : 'PENDING';
-        const statusClass = `status-${status.toLowerCase()}`;
-        const count = getLearnerPayments(l.regNo).length;
-        tbody.innerHTML += `
-            <tr>
-                <td><strong>${l.regNo}</strong></td>
-                <td>${l.name}</td>
-                <td>${l.fatherName || '—'}</td>
-                <td>${l.motherName || '—'}</td>
-                <td>${l.class || '—'}</td>
-                <td>${l.gender === 'M' ? 'Male' : 'Female'}</td>
-                <td>RWF ${due.toLocaleString()}</td>
-                <td>RWF ${paid.toLocaleString()}</td>
-                <td>RWF ${balance.toLocaleString()}</td>
-                <td><span class="status-badge ${statusClass}">${status}</span></td>
-                <td><span class="payment-details" onclick="showPaymentHistory('${l.regNo}', '${l.name.replace(/'/g, "\\'")}')">View (${count})</span></td>
-                <td style="white-space:nowrap;">
-                    <button class="btn-sm btn-primary" onclick="editLearner('${l.regNo}')">Edit</button>
-                    <button class="btn-sm btn-pay" onclick="recordPayment('${l.regNo}', '${l.name.replace(/'/g, "\\'")}')">Pay</button>
-                    <button class="btn-sm btn-danger" onclick="deleteLearner('${l.regNo}')">Delete</button>
-                </td>
-            </tr>`;
-    });
-}
 function renderStaff() {
     const tbody = document.getElementById('staffList');
-    tbody.innerHTML = staff.length === 0 ? '<tr><td colspan="5" style="text-align:center;padding:60px;color:#999;">No staff registered</td></tr>' : '';
-    staff.forEach((s, i) => {
-        tbody.innerHTML += `<tr>
-            <td>${s.regNo}</td>
-            <td>${s.name}</td>
-            <td>${s.gender === 'M' ? 'Male' : 'Female'}</td>
-            <td>${s.role}</td>
-            <td>
-                <button class="btn-sm btn-primary" onclick="editStaff(${i})">Edit</button>
-                <button class="btn-sm btn-danger" onclick="deleteStaff(${i})">Delete</button>
-            </td>
-        </tr>`;
-    });
+    let rows = [];
+    if (staff.length === 0) {
+        rows.push('<tr><td colspan="5" style="text-align:center;padding:60px;color:#999;">No staff registered</td></tr>');
+    } else {
+        staff.forEach((s, i) => {
+            rows.push(`<tr>
+                <td>${s.regNo}</td>
+                <td>${s.name}</td>
+                <td>${s.gender === 'M' ? 'Male' : 'Female'}</td>
+                <td>${s.role}</td>
+                <td>
+                    <button class="btn-sm btn-primary" onclick="editStaff(${i})">Edit</button>
+                    <button class="btn-sm btn-danger" onclick="deleteStaff(${i})">Delete</button>
+                </td>
+            </tr>`);
+        });
+    }
+    tbody.innerHTML = rows.join('');
 }
 function renderClasses() {
     const tbody = document.getElementById('classList');
-    tbody.innerHTML = '';
+    let rows = [];
     if (classes.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:80px;color:#999;font-size:18px;">No classes created yet.<br><br>Click "Add New Class" to begin.</td></tr>';
+        rows.push('<tr><td colspan="3" style="text-align:center;padding:80px;color:#999;font-size:18px;">No classes created yet.<br><br>Click "Add New Class" to begin.</td></tr>');
         document.getElementById('totalClassesCount').textContent = '0';
-        return;
+    } else {
+        classes.sort().forEach(c => {
+            const count = learners.filter(l => l.class === c).length;
+            const plural = count !== 1 ? 's' : '';
+            rows.push(`
+                <tr>
+                    <td style="font-size:20px;font-weight:600;color:var(--primary);">${c}</td>
+                    <td style="text-align:center;font-size:28px;font-weight:bold;color:${count > 0 ? 'var(--success)' : '#999'};">
+                        ${count}
+                        <div style="font-size:14px;color:#666;margin-top:5px;">learner${plural}</div>
+                    </td>
+                    <td class="class-actions">
+                        <button class="btn-sm btn-success" onclick="showLearnersListModal('all', '${c}')"><i class="fas fa-users"></i> All</button>
+                        <button class="btn-sm btn-success" onclick="showLearnersListModal('paid', '${c}')"><i class="fas fa-check"></i> Paid</button>
+                        <button class="btn-sm btn-warning" onclick="showLearnersListModal('partial', '${c}')"><i class="fas fa-exclamation"></i> Partial</button>
+                        <button class="btn-sm btn-danger" onclick="showLearnersListModal('pending', '${c}')"><i class="fas fa-times"></i> Pending</button>
+                        <button class="btn-sm btn-primary" onclick="editClassName('${c}')"><i class="fas fa-edit"></i> Rename</button>
+                        <button class="btn-sm btn-danger" onclick="deleteClass('${c}')"><i class="fas fa-trash"></i> Delete</button>
+                    </td>
+                </tr>`);
+        });
+        document.getElementById('totalClassesCount').textContent = classes.length;
     }
-    classes.sort().forEach(c => {
-        const count = learners.filter(l => l.class === c).length;
-        const plural = count !== 1 ? 's' : '';
-        tbody.innerHTML += `
-            <tr>
-                <td style="font-size:20px;font-weight:600;color:var(--primary);">${c}</td>
-                <td style="text-align:center;font-size:28px;font-weight:bold;color:${count > 0 ? 'var(--success)' : '#999'};">
-                    ${count}
-                    <div style="font-size:14px;color:#666;margin-top:5px;">learner${plural}</div>
-                </td>
-                <td class="class-actions">
-                    <button class="btn-sm btn-success" onclick="showLearnersListModal('all', '${c}')"><i class="fas fa-users"></i> All</button>
-                    <button class="btn-sm btn-success" onclick="showLearnersListModal('paid', '${c}')"><i class="fas fa-check"></i> Paid</button>
-                    <button class="btn-sm btn-warning" onclick="showLearnersListModal('partial', '${c}')"><i class="fas fa-exclamation"></i> Partial</button>
-                    <button class="btn-sm btn-danger" onclick="showLearnersListModal('pending', '${c}')"><i class="fas fa-times"></i> Pending</button>
-                    <button class="btn-sm btn-primary" onclick="editClassName('${c}')"><i class="fas fa-edit"></i> Rename</button>
-                    <button class="btn-sm btn-danger" onclick="deleteClass('${c}')"><i class="fas fa-trash"></i> Delete</button>
-                </td>
-            </tr>`;
-    });
-    document.getElementById('totalClassesCount').textContent = classes.length;
+    tbody.innerHTML = rows.join('');
 }
 function populateClassFilter() {
     const select = document.getElementById('classFilter');
@@ -964,73 +1265,6 @@ function populateClassDropdown() {
     classes.sort().forEach(c => {
         select.innerHTML += `<option value="${c}">${c}</option>`;
     });
-}
-function showPaymentHistory(regNo, name) {
-    document.getElementById('phName').textContent = name;
-    document.getElementById('phRegNo').textContent = regNo;
-    const tbody = document.getElementById('paymentHistoryTable');
-    tbody.innerHTML = '';
-    const pays = getLearnerPayments(regNo);
-    if (pays.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">No payments recorded</td></tr>';
-    } else {
-        pays.forEach(p => {
-            tbody.innerHTML += `<tr><td>${p.date}</td><td>RWF ${p.amount.toLocaleString()}</td><td>${p.reason}</td></tr>`;
-        });
-    }
-    document.getElementById('paymentHistoryModal').classList.remove('hidden');
-}
-function showLearnersListModal(filter = 'all', specificClass = '') {
-    currentListFilter = filter;
-    currentListClass = specificClass;
-    const school = getCurrentSchool();
-    let title = filter.charAt(0).toUpperCase() + filter.slice(1) + ' Learners';
-    if (specificClass) title += ` in ${specificClass}`;
-    if (filter === 'all' && specificClass) title = `Learners in ${specificClass}`;
-    document.getElementById('learnersListTitle').textContent = `${title} - Term ${currentTerm}`;
-    document.getElementById('learnersListSchool').textContent = school ? school.name : '';
-    const tbody = document.getElementById('learnersListTable');
-    tbody.innerHTML = '';
-    let list = learners;
-    if (specificClass) {
-        list = learners.filter(l => l.class === specificClass);
-    }
-    if (filter !== 'all') {
-        list = list.filter(l => {
-            const due = getFeesDue(l.class);
-            const paid = getLearnerPayments(l.regNo).reduce((s, p) => s + p.amount, 0);
-            if (filter === 'paid') return paid >= due;
-            if (filter === 'partial') return paid > 0 && paid < due;
-            if (filter === 'pending') return paid === 0;
-            return true;
-        });
-    }
-    let totalDue = 0, totalPaid = 0, totalBalance = 0;
-    list.forEach((l, i) => {
-        const due = getFeesDue(l.class);
-        const paid = getLearnerPayments(l.regNo).reduce((s, p) => s + p.amount, 0);
-        const balance = due - paid;
-        const status = paid >= due ? 'PAID' : paid > 0 ? 'PARTIAL' : 'PENDING';
-        totalDue += due;
-        totalPaid += paid;
-        totalBalance += balance;
-        tbody.innerHTML += `<tr>
-            <td>${i + 1}</td>
-            <td>${l.regNo}</td>
-            <td>${l.name}</td>
-            <td>${l.fatherName || '—'}</td>
-            <td>${l.motherName || '—'}</td>
-            <td>${l.class}</td>
-            <td>${l.gender === 'M' ? 'Male' : 'Female'}</td>
-            <td>RWF ${due.toLocaleString()}</td>
-            <td>RWF ${paid.toLocaleString()}</td>
-            <td>RWF ${balance.toLocaleString()}</td>
-            <td>${status}</td>
-        </tr>`;
-    });
-    tbody.innerHTML += `<tr style="font-weight:bold;"><td colspan="7">Totals</td><td>RWF ${totalDue.toLocaleString()}</td><td>RWF ${totalPaid.toLocaleString()}</td><td>RWF ${totalBalance.toLocaleString()}</td><td></td></tr>`;
-    document.getElementById('totalLearnersCount').textContent = list.length;
-    document.getElementById('learnersListModal').classList.remove('hidden');
 }
 function renderAll() {
     renderDashboard();
@@ -1047,26 +1281,31 @@ function showAddLearnerModal() {
     document.getElementById('addLearnerForm').reset();
     delete document.getElementById('addLearnerForm').dataset.editIndex;
     populateClassDropdown();
+    document.getElementById('learnerRegNo').readOnly = false;
     document.getElementById('addLearnerModal').classList.remove('hidden');
 }
 function editLearner(regNo) {
-    const l = learners.find(l => l.regNo === regNo);
-    if (!l) return;
+    if (!learnersMap.has(regNo)) return;
+    const l = learnersMap.get(regNo);
+    const index = learners.findIndex(learner => learner.regNo === regNo);
     document.getElementById('learnerRegNo').value = l.regNo;
     document.getElementById('learnerName').value = l.name;
     document.getElementById('learnerFatherName').value = l.fatherName || '';
     document.getElementById('learnerMotherName').value = l.motherName || '';
     document.getElementById('learnerGender').value = l.gender;
     document.getElementById('learnerClass').value = l.class;
-    document.getElementById('addLearnerForm').dataset.editIndex = learners.indexOf(l);
+    document.getElementById('addLearnerForm').dataset.editIndex = index;
     document.getElementById('learnerModalTitle').textContent = 'Edit Learner';
     populateClassDropdown();
+    document.getElementById('learnerRegNo').readOnly = true;
     document.getElementById('addLearnerModal').classList.remove('hidden');
 }
 function deleteLearner(regNo) {
     if (confirm('Delete this learner and all their payments?')) {
         learners = learners.filter(l => l.regNo !== regNo);
+        learnersMap.delete(regNo);
         payments = payments.filter(p => p.regNo !== regNo);
+        buildPaymentsCache();
         saveSchoolData();
         renderAll();
     }
@@ -1080,12 +1319,15 @@ document.getElementById('addLearnerForm').onsubmit = function(e) {
     const gender = document.getElementById('learnerGender').value;
     const cls = document.getElementById('learnerClass').value;
     if (!regNo || !name || !gender || !cls) return alert('Required fields: SDMS Code, Name, Gender, Class');
-    const editIndex = this.dataset.editIndex;
-    if (editIndex !== undefined) {
-        learners[parseInt(editIndex)] = {regNo, name, fatherName, motherName, gender, class: cls};
+    const editIndex = parseInt(this.dataset.editIndex);
+    if (!isNaN(editIndex)) {
+        learners[editIndex] = {regNo, name, fatherName, motherName, gender, class: cls};
+        learnersMap.set(regNo, learners[editIndex]);
     } else {
-        if (learners.some(l => l.regNo === regNo)) return alert('SDMS Code already exists');
-        learners.push({regNo, name, fatherName, motherName, gender, class: cls});
+        if (learnersMap.has(regNo)) return alert('SDMS Code already exists');
+        const newLearner = {regNo, name, fatherName, motherName, gender, class: cls};
+        learners.push(newLearner);
+        learnersMap.set(regNo, newLearner);
     }
     saveSchoolData();
     closeModal('addLearnerModal');
@@ -1094,6 +1336,7 @@ document.getElementById('addLearnerForm').onsubmit = function(e) {
 function showAddStaffModal() {
     document.getElementById('addStaffForm').reset();
     delete document.getElementById('addStaffForm').dataset.index;
+    document.getElementById('staffRegNo').readOnly = false;
     document.getElementById('addStaffModal').classList.remove('hidden');
 }
 function editStaff(i) {
@@ -1103,11 +1346,14 @@ function editStaff(i) {
     document.getElementById('staffGender').value = s.gender;
     document.getElementById('staffRole').value = s.role;
     document.getElementById('addStaffForm').dataset.index = i;
+    document.getElementById('staffRegNo').readOnly = true;
     document.getElementById('addStaffModal').classList.remove('hidden');
 }
 function deleteStaff(i) {
     if (confirm('Delete this staff member?')) {
+        const regNo = staff[i].regNo;
         staff.splice(i, 1);
+        staffMap.delete(regNo);
         saveSchoolData();
         renderStaff();
     }
@@ -1122,16 +1368,19 @@ document.getElementById('addStaffForm').onsubmit = function(e) {
     const index = this.dataset.index;
     if (index !== undefined) {
         staff[parseInt(index)] = {regNo, name, gender, role};
+        staffMap.set(regNo, staff[parseInt(index)]);
     } else {
-        if (staff.some(s => s.regNo === regNo)) return alert('Staff code already exists');
-        staff.push({regNo, name, gender, role});
+        if (staffMap.has(regNo)) return alert('Staff code already exists');
+        const newStaff = {regNo, name, gender, role};
+        staff.push(newStaff);
+        staffMap.set(regNo, newStaff);
     }
     saveSchoolData();
     closeModal('addStaffModal');
     renderAll();
 };
 function addClass() {
-    const name = prompt('Enter new class name (e.g. P1, S4, Nursery):').trim().toUpperCase();
+    const name = prompt('Enter new class name (e.g. P1, S4, N1):').trim().toUpperCase();
     if (!name) return;
     if (classes.includes(name)) return alert('Class already exists');
     classes.push(name);
@@ -1147,6 +1396,7 @@ function editClassName(oldName) {
     const index = classes.indexOf(oldName);
     classes[index] = newName;
     learners = learners.map(l => l.class === oldName ? {...l, class: newName} : l);
+    buildLearnersMap(); // Rebuild map since objects changed
     saveSchoolData();
     renderAll();
 }
@@ -1154,37 +1404,16 @@ function deleteClass(c) {
     if (confirm(`Delete class ${c}? All learners will be unassigned from this class.`)) {
         classes = classes.filter(x => x !== c);
         learners = learners.map(l => l.class === c ? {...l, class: ''} : l);
+        buildLearnersMap(); // Rebuild
         saveSchoolData();
         renderAll();
     }
-}
-function showFeesModal() {
-    const f = feesStructure[currentTerm];
-    document.getElementById('nursery_school').value = f.nursery.school || 35000;
-    document.getElementById('lower_school').value = f.lower.school || 45000;
-    document.getElementById('upper_school').value = f.upper.school || 55000;
-    document.getElementById('ordinary_school').value = f.ordinary.school || 80000;
-    document.getElementById('advanced_school').value = f.advanced.school || 100000;
-    document.getElementById('feesModal').classList.remove('hidden');
-}
-function saveFeesStructure() {
-    feesStructure[currentTerm] = {
-        nursery: {school: parseInt(document.getElementById('nursery_school').value) || 35000},
-        lower: {school: parseInt(document.getElementById('lower_school').value) || 45000},
-        upper: {school: parseInt(document.getElementById('upper_school').value) || 55000},
-        ordinary: {school: parseInt(document.getElementById('ordinary_school').value) || 80000},
-        advanced: {school: parseInt(document.getElementById('advanced_school').value) || 100000}
-    };
-    saveSchoolData();
-    closeModal('feesModal');
-    renderFeesSummary();
-    renderAll();
 }
 function exportLearners() {
     let csv = 'SDMS Code,Name,Father Name,Mother Name,Class,Gender,Due,Paid,Balance,Status\n';
     learners.forEach(l => {
         const due = getFeesDue(l.class);
-        const paid = getLearnerPayments(l.regNo).reduce((s, p) => s + p.amount, 0);
+        const paid = getLearnerPaid(l.regNo);
         const balance = due - paid;
         const status = paid >= due ? 'PAID' : paid > 0 ? 'PARTIAL' : 'PENDING';
         csv += `${l.regNo},${l.name},${l.fatherName || ''},${l.motherName || ''},${l.class},${l.gender === 'M' ? 'Male' : 'Female'},${due},${paid},${balance},${status}\n`;
@@ -1204,7 +1433,7 @@ function exportCurrentList() {
     if (currentListFilter !== 'all') {
         list = list.filter(l => {
             const due = getFeesDue(l.class);
-            const paid = getLearnerPayments(l.regNo).reduce((s, p) => s + p.amount, 0);
+            const paid = getLearnerPaid(l.regNo);
             if (currentListFilter === 'paid') return paid >= due;
             if (currentListFilter === 'partial') return paid > 0 && paid < due;
             if (currentListFilter === 'pending') return paid === 0;
@@ -1215,7 +1444,7 @@ function exportCurrentList() {
     let totalDue = 0, totalPaid = 0, totalBalance = 0;
     list.forEach((l, i) => {
         const due = getFeesDue(l.class);
-        const paid = getLearnerPayments(l.regNo).reduce((s, p) => s + p.amount, 0);
+        const paid = getLearnerPaid(l.regNo);
         const balance = due - paid;
         const status = paid >= due ? 'PAID' : paid > 0 ? 'PARTIAL' : 'PENDING';
         totalDue += due;
@@ -1292,6 +1521,7 @@ function importLearners(event) {
     const reader = new FileReader();
     reader.onload = function(e) {
         const lines = e.target.result.split('\n');
+        const existingRegNos = new Set(learners.map(l => l.regNo));
         let added = 0;
         for (let i = 1; i < lines.length; i++) {
             const line = lines[i].trim();
@@ -1304,13 +1534,74 @@ function importLearners(event) {
             const motherName = parts[3].trim();
             const gender = parts[4].trim().toUpperCase();
             const cls = parts[5].trim().toUpperCase();
-            if (regNo && name && ['M','F'].includes(gender) && cls && !learners.some(l => l.regNo === regNo)) {
-                learners.push({regNo, name, fatherName, motherName, gender, class: cls});
+            if (regNo && name && ['M','F'].includes(gender) && cls && !existingRegNos.has(regNo)) {
+                const newLearner = {regNo, name, fatherName, motherName, gender, class: cls};
+                learners.push(newLearner);
+                learnersMap.set(regNo, newLearner);
+                existingRegNos.add(regNo);
                 added++;
             }
         }
         saveSchoolData();
         alert(`Successfully imported ${added} learners`);
+        renderAll();
+    };
+    reader.readAsText(file);
+}
+function downloadPaymentsTemplate() {
+    const csv = 'regNo,amount,date,reason,term\nRW001,20000,2025-01-13,School Fees,1\n';
+    const blob = new Blob([csv], {type: 'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'payments_template.csv';
+    a.click();
+}
+function importPayments(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const lines = e.target.result.split('\n');
+        let added = 0;
+        let errors = [];
+        for (let i = 1; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+            const parts = line.split(',');
+            if (parts.length < 2) continue;
+            const regNo = parts[0].trim().toUpperCase();
+            const amountStr = parts[1].trim();
+            const date = parts[2] ? parts[2].trim() : new Date().toISOString().split('T')[0];
+            const reason = parts[3] ? parts[3].trim() : 'School Fees';
+            const term = parts[4] ? parseInt(parts[4].trim()) : currentTerm;
+            const amount = parseInt(amountStr);
+            if (!learnersMap.has(regNo)) {
+                errors.push(`Learner ${regNo} not found`);
+                continue;
+            }
+            if (isNaN(amount) || amount <= 0) {
+                errors.push(`Invalid amount for ${regNo}`);
+                continue;
+            }
+            const learner = learnersMap.get(regNo);
+            const payment = { regNo, name: learner.name, amount, reason, term, date };
+            payments.push(payment);
+            if (term === currentTerm) {
+                if (!paymentsMap.has(regNo)) {
+                    paymentsMap.set(regNo, []);
+                }
+                paymentsMap.get(regNo).push(payment);
+                paidMap.set(regNo, (paidMap.get(regNo) || 0) + amount);
+            }
+            added++;
+        }
+        saveSchoolData();
+        let message = `Successfully imported ${added} payments`;
+        if (errors.length > 0) {
+            message += `\nErrors:\n${errors.join('\n')}`;
+        }
+        alert(message);
         renderAll();
     };
     reader.readAsText(file);
@@ -1342,6 +1633,7 @@ function importStaff(event) {
     const reader = new FileReader();
     reader.onload = function(e) {
         const lines = e.target.result.split('\n');
+        const existingRegNos = new Set(staff.map(s => s.regNo));
         let added = 0;
         for (let i = 1; i < lines.length; i++) {
             const line = lines[i].trim();
@@ -1352,8 +1644,11 @@ function importStaff(event) {
             const name = parts[1].trim();
             const gender = parts[2].trim().toUpperCase();
             const role = parts[3].trim();
-            if (regNo && name && ['M','F'].includes(gender) && role && !staff.some(s => s.regNo === regNo)) {
-                staff.push({regNo, name, gender, role});
+            if (regNo && name && ['M','F'].includes(gender) && role && !existingRegNos.has(regNo)) {
+                const newStaff = {regNo, name, gender, role};
+                staff.push(newStaff);
+                staffMap.set(regNo, newStaff);
+                existingRegNos.add(regNo);
                 added++;
             }
         }
@@ -1363,9 +1658,36 @@ function importStaff(event) {
     };
     reader.readAsText(file);
 }
+document.getElementById('paymentForm').onsubmit = function(e) {
+    e.preventDefault();
+    const regNo = this.dataset.regNo;
+    const amount = parseInt(document.getElementById('payAmount').value);
+    const reason = document.getElementById('payReason').value;
+    const date = document.getElementById('payDate').value;
+    if (isNaN(amount) || amount <= 0 || !reason || !date) {
+        alert('Please fill all fields correctly.');
+        return;
+    }
+    const learner = learnersMap.get(regNo);
+    const payment = { regNo, name: learner.name, amount, reason, term: currentTerm, date };
+    payments.push(payment);
+    if (!paymentsMap.has(regNo)) {
+        paymentsMap.set(regNo, []);
+    }
+    paymentsMap.get(regNo).push(payment);
+    paidMap.set(regNo, (paidMap.get(regNo) || 0) + amount);
+    saveSchoolData();
+    closeModal('paymentModal');
+    renderAll();
+    alert(`RWF ${amount.toLocaleString()} recorded!`);
+};
 document.addEventListener('DOMContentLoaded', () => {
     populateSchoolSelector();
     setTimeout(() => document.getElementById('loadingScreen').classList.add('hidden'), 1000);
+    document.getElementById('learnerSearch').addEventListener('keyup', () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => renderLearners(1), 300);
+    });
 });
 </script>
 </body>
